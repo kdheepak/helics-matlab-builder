@@ -1,0 +1,44 @@
+sudo: required
+dist: xenial
+
+services:
+  - docker
+
+cache:
+  ccache: true
+  directories:
+    - $HOME/.m2  # Maven
+
+git:
+  depth: 250
+
+
+before_install:
+  # Common pre-install steps for all builds
+  - eval "${MATRIX_EVAL}"
+  - ulimit -c unlimited -S
+  - |
+      if [ $TRAVIS_OS_NAME == "linux" ]; then
+        sudo bash -c "echo -e 'Acquire::Retries 10; Acquire::http::Timeout \"20\";' > /etc/apt/apt.conf.d/99-travis-retry"
+        sudo apt-get update -qq
+      fi
+
+
+matrix:
+  fast_finish: true
+  allow_failures:
+  - jdk: oraclejdk9
+  include:
+  - name: MATLAB
+    language: java
+    os: linux
+    dist: xenial
+    jdk: openjdk8
+    env:
+    - HELICS_BUILD_TYPE=release
+    before_script:
+    - $TRAVIS_BUILD_DIR/ci/install_linux.sh
+    - $TRAVIS_BUILD_DIR/ci/before_script_matlab.sh
+    script:
+    - $TRAVIS_BUILD_DIR/ci/script_matlab.sh
+
